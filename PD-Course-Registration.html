@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MSc Course Registration - Department of Chemistry, RUET</title>
+
+<!-- PDF libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+    :root{
+        --ruet:#8b1e2d;
+        --ruet-dark:#5f111d;
+        --light:#f7f7f8;
+        --border:#cfd3d8;
+        --text:#20242a;
+    }
+    *{box-sizing:border-box}
+    body{
+        margin:0;
+        font-family:Arial, Helvetica, sans-serif;
+        background:#eef1f4;
+        color:var(--text);
+        line-height:1.45;
+    }
+    .container{
+        max-width:1050px;
+        margin:25px auto;
+        padding:0 15px;
+    }
+    .card{
+        background:#fff;
+        border-radius:12px;
+        box-shadow:0 4px 18px rgba(0,0,0,.08);
+        overflow:hidden;
+    }
+    .header{
+        background:linear-gradient(135deg,var(--ruet-dark),var(--ruet));
+        color:#fff;
+        padding:25px 30px;
+        text-align:center;
+    }
+    .header h1{margin:0 0 5px;font-size:25px}
+    .header h2{margin:0;font-size:19px;font-weight:600}
+    .header p{margin:8px 0 0;font-size:14px}
+    form{padding:28px}
+    .section{
+        border:1px solid var(--border);
+        border-radius:9px;
+        margin-bottom:22px;
+        padding:20px;
+    }
+    .section-title{
+        margin:-34px 0 17px 10px;
+        background:#fff;
+        width:max-content;
+        padding:0 9px;
+        color:var(--ruet-dark);
+        font-weight:700;
+        font-size:17px;
+    }
+    .grid{
+        display:grid;
+        grid-template-columns:repeat(2,1fr);
+        gap:16px;
+    }
+    .field label{
+        display:block;
+        font-weight:600;
+        margin-bottom:6px;
+        font-size:14px;
+    }
+    input, select, textarea{
+        width:100%;
+        padding:10px 11px;
+        border:1px solid #bfc5cc;
+        border-radius:6px;
+        font-size:14px;
+        background:#fff;
+    }
+    textarea{min-height:75px;resize:vertical}
+    .full{grid-column:1/-1}
+    .course-table{
+        width:100%;
+        border-collapse:collapse;
+        font-size:13px;
+    }
+    .course-table th,.course-table td{
+        border:1px solid #cdd1d6;
+        padding:9px 8px;
+        vertical-align:middle;
+    }
+    .course-table th{
+        background:#f0f2f4;
+        text-align:center;
+    }
+    .course-table td.center{text-align:center}
+    .course-table tr.selected{background:#fff5f6}
+    .course-table input[type=radio]{width:auto;transform:scale(1.15)}
+    .teacher{white-space:nowrap}
+    .note{
+        background:#fff8df;
+        border-left:4px solid #d6a700;
+        padding:10px 12px;
+        margin-bottom:15px;
+        font-size:13px;
+    }
+    .signature-grid{
+        display:grid;
+        grid-template-columns:repeat(3,1fr);
+        gap:18px;
+    }
+    .signature-box{
+        border:1px solid var(--border);
+        border-radius:8px;
+        padding:12px;
+    }
+    .signature-box h4{margin:0 0 8px;text-align:center}
+    canvas{
+        width:100%;
+        height:120px;
+        border:1px dashed #999;
+        border-radius:5px;
+        background:#fff;
+        touch-action:none;
+    }
+    .sig-buttons{
+        display:flex;
+        gap:6px;
+        margin-top:7px;
+    }
+    button{
+        border:0;
+        border-radius:7px;
+        padding:11px 18px;
+        cursor:pointer;
+        font-weight:700;
+        font-size:14px;
+    }
+    .clear{background:#e9ecef;color:#333}
+    .submit{background:var(--ruet);color:#fff}
+    .submit:hover{background:var(--ruet-dark)}
+    .actions{
+        display:flex;
+        justify-content:center;
+        gap:12px;
+        padding-top:5px;
+    }
+    .required{color:#b00020}
+    .footer-note{text-align:center;font-size:12px;color:#666;margin-top:15px}
+
+    /* PDF generation area - compact RUET-style registration form */
+    #pdfArea{
+        position:absolute;left:-10000px;top:0;width:794px;background:#fff;color:#000;
+        padding:0;font-family:Arial,Helvetica,sans-serif;
+    }
+    #pdfArea .copy{
+        width:100%;height:510px;padding:18px 28px 14px;border:1px solid #222;
+        margin-bottom:12px;background:#fff;
+    }
+    #pdfArea .copy:last-child{margin-bottom:0}
+    #pdfArea .motto{text-align:center;font-size:10px;font-weight:700;margin-bottom:3px}
+    #pdfArea .pdf-header{text-align:center;margin-bottom:7px}
+    #pdfArea h1{font-size:15px;margin:0 0 2px}
+    #pdfArea h2{font-size:12px;margin:0 0 3px}
+    #pdfArea .form-title{font-size:12px;font-weight:700;text-decoration:underline}
+    #pdfArea .copy-label{text-align:right;font-size:9px;font-weight:700;margin-top:-14px}
+    #pdfArea .info-table,#pdfArea .course-pdf-table{width:100%;border-collapse:collapse;margin:5px 0}
+    #pdfArea .info-table{font-size:9px}
+    #pdfArea .info-table td{padding:3px 4px;border:none;vertical-align:bottom}
+    #pdfArea .info-table .label{font-weight:700;white-space:nowrap}
+    #pdfArea .course-pdf-table{font-size:8px;table-layout:fixed}
+    #pdfArea .course-pdf-table th,#pdfArea .course-pdf-table td{
+        border:1px solid #333;padding:3px;vertical-align:middle
+    }
+    #pdfArea .course-pdf-table th{text-align:center;font-weight:700}
+    #pdfArea .course-pdf-table .code{width:15%}
+    #pdfArea .course-pdf-table .title{width:39%}
+    #pdfArea .course-pdf-table .credit{width:10%}
+    #pdfArea .course-pdf-table .consent{width:18%}
+    #pdfArea .course-pdf-table .remarks{width:18%}
+    #pdfArea .teacher-line{font-size:7px;margin-top:1px}
+    #pdfArea .consent-line{display:block;border-bottom:1px dotted #555;height:12px}
+    #pdfArea .total-row td{font-weight:700}
+    #pdfArea .declaration{font-size:7.5px;margin:5px 0 4px;line-height:1.3}
+    #pdfArea .sig-table{width:100%;border-collapse:collapse;font-size:7.5px;margin-top:6px}
+    #pdfArea .sig-table td{width:33.33%;text-align:center;border:none;vertical-align:bottom;padding:2px 8px}
+    #pdfArea .sig-table img{display:block;width:115px;height:32px;object-fit:contain;margin:0 auto 2px}
+    #pdfArea .sig-line{border-top:1px solid #111;padding-top:2px;margin-top:1px}
+    #pdfArea .copy-footer{display:flex;justify-content:space-between;border-top:1px solid #555;
+        margin-top:5px;padding-top:3px;font-size:7px}
+    @media(max-width:750px){
+        .grid,.signature-grid{grid-template-columns:1fr}
+        .full{grid-column:auto}
+        form{padding:16px}
+        .section{padding:14px}
+        .course-table{font-size:11px}
+        .course-table th,.course-table td{padding:6px 4px}
+    }
+</style>
+</head>
+
+<body>
+<div class="container">
+<div class="card">
+    <div class="header">
+        <h1>Rajshahi University of Engineering & Technology (RUET)</h1>
+        <h2>Department of Chemistry</h2>
+        <p>MSc Course Registration Form</p>
+    </div>
+
+    <form id="registrationForm">
+        <div class="section">
+            <div class="section-title">1. Student Information</div>
+            <div class="grid">
+                <div class="field">
+                    <label>Student Name <span class="required">*</span></label>
+                    <input id="studentName" required placeholder="Full name">
+                </div>
+                <div class="field">
+                    <label>Roll No. <span class="required">*</span></label>
+                    <input id="roll" required placeholder="e.g., 2301001">
+                </div>
+                <div class="field">
+                    <label>Registration No.</label>
+                    <input id="regNo" placeholder="University registration number">
+                </div>
+                <div class="field">
+                    <label>Session <span class="required">*</span></label>
+                    <input id="session" required placeholder="e.g., 2025-2026">
+                </div>
+                <div class="field">
+                    <label>Semester <span class="required">*</span></label>
+                    <select id="semester" required>
+                        <option value="">Select semester</option>
+                        <option>1st Semester</option><option>2nd Semester</option>
+                        <option>3rd Semester</option><option>4th Semester</option><option>Other</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Program <span class="required">*</span></label>
+                    <select id="program" required>
+                        <option value="">Select program</option>
+                        <option>MSc</option>
+                        <option>MPhil</option>
+						<option>PhD</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Student Type <span class="required">*</span></label>
+                    <select id="studentType" required>
+                        <option value="">Select</option>
+                        <option>Full-time</option>
+                        <option>Part-time</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Course Advisor</label>
+                    <input id="advisor" placeholder="Name of course advisor">
+                </div>
+                <div class="field">
+                    <label>Mobile</label>
+                    <input id="mobile" type="tel" placeholder="01XXXXXXXXX">
+                </div>
+                <div class="field">
+                    <label>Email</label>
+                    <input id="email" type="email" placeholder="student@ruet.ac.bd">
+                </div>
+                <div class="field full">
+                    <label>Contact Address</label>
+                    <textarea id="address" placeholder="Present/permanent address"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">2. Course Selection</div>
+            <div class="note">
+                Select <b>one or more courses</b> that have been offered and you intend to register for.
+                The total credits will be shown automatically.
+            </div>
+            <div id="creditSummary" style="margin:10px 0 15px;font-weight:700;color:#5f111d">
+                Selected courses: 0 &nbsp; | &nbsp; Total credits: 0
+            </div>
+
+            <div style="overflow-x:auto">
+            <table class="course-table">
+                <thead>
+                    <tr>
+                        <th>Select</th>
+                        <th>Course Code</th>
+                        <th>Course Title</th>
+                        <th>Credit</th>
+                        <th>Teacher</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody id="courseBody"></tbody>
+            </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">3. Declaration & Signatures</div>
+            <div class="note">
+                The student confirms that the information provided is correct and that the selected
+                course is intended for registration in the stated session.
+            </div>
+
+            <label style="display:flex;gap:8px;align-items:flex-start;font-size:14px;margin-bottom:18px">
+                <input type="checkbox" id="declaration" required style="width:auto;margin-top:4px">
+                <span>I declare that the information provided above is correct and I agree to comply
+                with the rules and requirements of the Department of Chemistry, RUET.</span>
+            </label>
+
+            <div class="signature-grid">
+                <div class="signature-box">
+                    <h4>Student Signature</h4>
+                    <canvas id="studentSig"></canvas>
+                    <div class="sig-buttons">
+                        <button type="button" class="clear" onclick="clearSignature('studentSig')">Clear</button>
+                    </div>
+                </div>
+
+                <div class="signature-box">
+                    <h4>Course Advisor</h4>
+                    <canvas id="advisorSig"></canvas>
+                    <div class="sig-buttons">
+                        <button type="button" class="clear" onclick="clearSignature('advisorSig')">Clear</button>
+                    </div>
+                </div>
+
+                <div class="signature-box">
+                    <h4>Head of the Department</h4>
+                    <canvas id="headSig"></canvas>
+                    <div class="sig-buttons">
+                        <button type="button" class="clear" onclick="clearSignature('headSig')">Clear</button>
+                    </div>
+                </div>
+            </div>
+
+            <p style="font-size:12px;color:#666;margin-top:12px">
+                Note: Signature boxes are provided for signing the generated document. For an official
+                institutional system, authenticated electronic signatures should be implemented on the server.
+            </p>
+        </div>
+
+        <div class="actions">
+            <button type="button" class="submit" onclick="generatePDF()">Submit & Generate PDF</button>
+        </div>
+        <div class="footer-note">
+            Department of Chemistry, RUET — MSc Course Registration System
+        </div>
+    </form>
+</div>
+</div>
+
+<!-- Hidden PDF document -->
+<div id="pdfArea">
+  <div class="copy">
+    <div class="motto">Heaven’s Light is Our Guide</div>
+    <div class="pdf-header">
+      <h1>Rajshahi University of Engineering &amp; Technology</h1>
+      <h2>Department of Chemistry</h2>
+      <div class="form-title">Course Registration Form</div>
+    </div>
+    <div class="copy-label">Student Copy</div>
+    <table class="info-table">
+      <tr><td class="label">Department:</td><td id="pDepartment1">Chemistry</td><td class="label">Program Study:</td><td id="pProgram1"></td></tr>
+      <tr><td class="label">Student Status:</td><td id="pType1"></td><td class="label">Semester:</td><td id="pSemester1"></td></tr>
+      <tr><td class="label">Name:</td><td id="pName1"></td><td class="label">Regd. No.:</td><td id="pReg1"></td></tr>
+      <tr><td class="label">Roll No:</td><td id="pRoll1"></td><td class="label">Session:</td><td id="pSession1"></td></tr>
+      <tr><td class="label">Mobile:</td><td id="pMobile1"></td><td class="label">Email:</td><td id="pEmail1"></td></tr>
+    </table>
+    <table class="course-pdf-table">
+      <thead><tr><th class="code">Course Code</th><th class="title">Course Title</th><th class="credit">Credit Hours</th><th class="consent">Consent of Teachers</th><th class="remarks">Remarks</th></tr></thead>
+      <tbody id="pCourses1"></tbody>
+      <tfoot><tr class="total-row"><td colspan="2" style="text-align:right">Total Credit Hours</td><td id="pTotalCredits1" style="text-align:center"></td><td></td><td></td></tr></tfoot>
+    </table>
+    <div class="declaration"><b>Declaration:</b> I certify that the information provided above is correct and that I intend to register for the courses listed above in the stated semester/session. Registration is subject to the approval of the concerned course teachers, Student Adviser and Head of the Department.</div>
+    <table class="sig-table">
+      <tr><td><img id="pStudentSig1"><div class="sig-line">Student</div></td><td><img id="pAdvisorSig1"><div class="sig-line">Student Adviser / Course Adviser</div></td><td><img id="pHeadSig1"><div class="sig-line">Head of Department</div></td></tr>
+      <tr><td>Date: __________________</td><td>Date: __________________</td><td>Date: __________________</td></tr>
+    </table>
+    <div class="copy-footer"><span>Department of Chemistry, RUET</span><span>MSc Course Registration</span></div>
+  </div>
+
+  <div class="copy">
+    <div class="motto">Heaven’s Light is Our Guide</div>
+    <div class="pdf-header">
+      <h1>Rajshahi University of Engineering &amp; Technology</h1>
+      <h2>Department of Chemistry</h2>
+      <div class="form-title">Course Registration Form</div>
+    </div>
+    <div class="copy-label">Office Copy</div>
+    <table class="info-table">
+      <tr><td class="label">Department:</td><td id="pDepartment2">Chemistry</td><td class="label">Program Study:</td><td id="pProgram2"></td></tr>
+      <tr><td class="label">Student Status:</td><td id="pType2"></td><td class="label">Semester:</td><td id="pSemester2"></td></tr>
+      <tr><td class="label">Name:</td><td id="pName2"></td><td class="label">Regd. No.:</td><td id="pReg2"></td></tr>
+      <tr><td class="label">Roll No:</td><td id="pRoll2"></td><td class="label">Session:</td><td id="pSession2"></td></tr>
+      <tr><td class="label">Mobile:</td><td id="pMobile2"></td><td class="label">Email:</td><td id="pEmail2"></td></tr>
+    </table>
+    <table class="course-pdf-table">
+      <thead><tr><th class="code">Course Code</th><th class="title">Course Title</th><th class="credit">Credit Hours</th><th class="consent">Consent of Teachers</th><th class="remarks">Remarks</th></tr></thead>
+      <tbody id="pCourses2"></tbody>
+      <tfoot><tr class="total-row"><td colspan="2" style="text-align:right">Total Credit Hours</td><td id="pTotalCredits2" style="text-align:center"></td><td></td><td></td></tr></tfoot>
+    </table>
+    <div class="declaration"><b>Declaration:</b> I certify that the information provided above is correct and that I intend to register for the courses listed above in the stated semester/session. Registration is subject to the approval of the concerned course teachers, Student Adviser and Head of the Department.</div>
+    <table class="sig-table">
+      <tr><td><img id="pStudentSig2"><div class="sig-line">Student</div></td><td><img id="pAdvisorSig2"><div class="sig-line">Student Adviser / Course Adviser</div></td><td><img id="pHeadSig2"><div class="sig-line">Head of Department</div></td></tr>
+      <tr><td>Date: __________________</td><td>Date: __________________</td><td>Date: __________________</td></tr>
+    </table>
+    <div class="copy-footer"><span>Department of Chemistry, RUET</span><span>MSc Course Registration</span></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   COURSE DATABASE
+   Replace these sample entries with the actual courses offered
+   by Chemistry Department teachers.
+   Students can select MULTIPLE courses.
+   ============================================================ */
+const courses = [
+    {code:"CHEM 601", title:"Advanced Physical Chemistry", credit:"3", teacher:"Dr. Teacher A", type:"Theory"},
+    {code:"CHEM 603", title:"Advanced Organic Chemistry", credit:"3", teacher:"Dr. Teacher B", type:"Theory"},
+    {code:"CHEM 605", title:"Advanced Inorganic Chemistry", credit:"3", teacher:"Dr. Teacher C", type:"Theory"},
+    {code:"CHEM 607", title:"Computational Chemistry", credit:"3", teacher:"Dr. Teacher D", type:"Theory"},
+    {code:"CHEM 609", title:"Spectroscopy and Molecular Characterization", credit:"3", teacher:"Dr. Teacher E", type:"Theory"},
+    {code:"CHEM 611", title:"Research Methodology", credit:"3", teacher:"Dr. Teacher F", type:"Theory"},
+    {code:"CHEM 613", title:"Advanced Analytical Chemistry", credit:"3", teacher:"Dr. Teacher G", type:"Theory"}
+];
+
+const courseBody = document.getElementById("courseBody");
+
+courses.forEach((c, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+        <td class="center">
+            <input type="checkbox" name="selectedCourse" value="${i}">
+        </td>
+        <td>${c.code}</td>
+        <td>${c.title}</td>
+        <td class="center">${c.credit}</td>
+        <td class="teacher">${c.teacher}</td>
+        <td class="center">${c.type}</td>
+    `;
+    courseBody.appendChild(tr);
+});
+
+function updateCourseSummary(){
+    const selected = [...document.querySelectorAll('input[name="selectedCourse"]:checked')];
+    let totalCredits = 0;
+
+    document.querySelectorAll(".course-table tbody tr").forEach(r => r.classList.remove("selected"));
+    selected.forEach(box => {
+        box.closest("tr").classList.add("selected");
+        totalCredits += Number(courses[Number(box.value)].credit) || 0;
+    });
+
+    document.getElementById("creditSummary").innerHTML =
+        `Selected courses: <b>${selected.length}</b> &nbsp; | &nbsp; Total credits: <b>${totalCredits}</b>`;
+}
+
+document.addEventListener("change", function(e){
+    if(e.target.name === "selectedCourse"){
+        updateCourseSummary();
+    }
+});
+
+/* Signature pad implementation */
+const canvases = {};
+function setupSignature(id){
+    const canvas = document.getElementById(id);
+    const ctx = canvas.getContext("2d");
+    let drawing = false;
+
+    function resize(){
+        const ratio = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * ratio;
+        canvas.height = rect.height * ratio;
+        ctx.scale(ratio, ratio);
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#111";
+    }
+    resize();
+
+    function point(e){
+        const rect = canvas.getBoundingClientRect();
+        if(e.touches){
+            return {x:e.touches[0].clientX-rect.left, y:e.touches[0].clientY-rect.top};
+        }
+        return {x:e.clientX-rect.left, y:e.clientY-rect.top};
+    }
+    function start(e){ drawing=true; const p=point(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); }
+    function move(e){ if(!drawing)return; const p=point(e); ctx.lineTo(p.x,p.y); ctx.stroke(); e.preventDefault(); }
+    function end(){ drawing=false; }
+
+    canvas.addEventListener("mousedown",start);
+    canvas.addEventListener("mousemove",move);
+    canvas.addEventListener("mouseup",end);
+    canvas.addEventListener("mouseleave",end);
+    canvas.addEventListener("touchstart",start,{passive:false});
+    canvas.addEventListener("touchmove",move,{passive:false});
+    canvas.addEventListener("touchend",end);
+
+    canvases[id] = {canvas,ctx};
+}
+["studentSig","advisorSig","headSig"].forEach(setupSignature);
+
+function clearSignature(id){
+    const {canvas,ctx} = canvases[id];
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+
+function hasSignature(id){
+    const canvas = canvases[id].canvas;
+    const data = canvas.getContext("2d").getImageData(0,0,canvas.width,canvas.height).data;
+    for(let i=3;i<data.length;i+=4) if(data[i] > 0) return true;
+    return false;
+}
+
+function setText(id, value){
+    document.getElementById(id).textContent = value || "—";
+}
+
+async function generatePDF(){
+    const form = document.getElementById("registrationForm");
+    if(!form.reportValidity()) return;
+
+    const selected = [...document.querySelectorAll('input[name="selectedCourse"]:checked')];
+    if(selected.length === 0){
+        alert("Please select at least one course.");
+        return;
+    }
+    if(!hasSignature("studentSig")){
+        alert("Please provide the student's signature before generating the PDF.");
+        return;
+    }
+
+    const selectedCourses = selected.map(box => courses[Number(box.value)]);
+    const totalCredits = selectedCourses.reduce((sum,c) => sum + (Number(c.credit)||0), 0);
+
+    const data = {
+        department:"Chemistry",
+        program:document.getElementById("program").value,
+        type:document.getElementById("studentType").value,
+        semester:document.getElementById("semester").value,
+        name:document.getElementById("studentName").value,
+        reg:document.getElementById("regNo").value,
+        roll:document.getElementById("roll").value,
+        session:document.getElementById("session").value,
+        mobile:document.getElementById("mobile").value,
+        email:document.getElementById("email").value
+    };
+
+    const sigs = {
+        student:canvases.studentSig.canvas.toDataURL("image/png"),
+        advisor:hasSignature("advisorSig") ? canvases.advisorSig.canvas.toDataURL("image/png") : "",
+        head:hasSignature("headSig") ? canvases.headSig.canvas.toDataURL("image/png") : ""
+    };
+
+    [1,2].forEach(n=>{
+        setText(`pDepartment${n}`,data.department);
+        setText(`pProgram${n}`,data.program);
+        setText(`pType${n}`,data.type);
+        setText(`pSemester${n}`,data.semester);
+        setText(`pName${n}`,data.name);
+        setText(`pReg${n}`,data.reg);
+        setText(`pRoll${n}`,data.roll);
+        setText(`pSession${n}`,data.session);
+        setText(`pMobile${n}`,data.mobile);
+        setText(`pEmail${n}`,data.email);
+
+        document.getElementById(`pCourses${n}`).innerHTML=selectedCourses.map(c=>`
+            <tr>
+                <td>${escapeHtml(c.code)}</td>
+                <td><b>${escapeHtml(c.title)}</b><div class="teacher-line">Course Teacher: ${escapeHtml(c.teacher)}</div></td>
+                <td style="text-align:center">${escapeHtml(c.credit)}</td>
+                <td><span class="consent-line"></span></td>
+                <td></td>
+            </tr>`).join("");
+
+        document.getElementById(`pTotalCredits${n}`).textContent=totalCredits;
+        document.getElementById(`pStudentSig${n}`).src=sigs.student;
+        document.getElementById(`pAdvisorSig${n}`).src=sigs.advisor;
+        document.getElementById(`pHeadSig${n}`).src=sigs.head;
+    });
+
+    const pdfArea=document.getElementById("pdfArea");
+    const canvas=await html2canvas(pdfArea,{scale:2,backgroundColor:"#ffffff",useCORS:true});
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF("p","mm","a4");
+    const marginX=7, marginY=7, pageWidth=210, pageHeight=297;
+    const usableWidth=pageWidth-2*marginX, usableHeight=pageHeight-2*marginY;
+    const imgHeight=canvas.height*usableWidth/canvas.width;
+    const img=canvas.toDataURL("image/png");
+
+    // The two copies are deliberately compact so they resemble the supplied
+    // RUET form and appear together on one A4 page.
+    if(imgHeight<=usableHeight){
+        pdf.addImage(img,"PNG",marginX,marginY,usableWidth,imgHeight);
+    }else{
+        pdf.addImage(img,"PNG",marginX,marginY,usableWidth,usableHeight);
+    }
+
+    const safeName=data.name.trim().replace(/[^a-z0-9]+/gi,"_")||"Student";
+    const safeRoll=data.roll.trim().replace(/[^a-z0-9]+/gi,"_")||"Roll";
+    pdf.save(`RUET_MSc_Course_Registration_${safeName}_${safeRoll}.pdf`);
+    alert(`PDF generated successfully with ${selectedCourses.length} selected course(s) and ${totalCredits} total credit hour(s).`);
+}
+
+function escapeHtml(value){
+    return String(value ?? "").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]));
+}
+</script>
+</body>
+</html>
